@@ -6,6 +6,11 @@ Endpoints:
     POST /speak  {"text": "..."}          -> speaks on this machine's speakers
     POST /speak  {"text": "...", "return": "wav"} -> returns audio/wav bytes
     GET  /health                          -> {"status": "ok"}
+
+Optional /speak fields:
+    "language": "en" | "es" | "fr"  -> picks the matching Kokoro voice
+    "voice":    any Kokoro voice name (overrides language)
+    "speed":    playback speed multiplier (default from config)
 """
 
 import io
@@ -77,8 +82,20 @@ class Handler(BaseHTTPRequestHandler):
             self._json(400, {"error": "'text' is required"})
             return
 
+        lang_cfg = config.LANGUAGE_VOICES.get(str(data.get("language", "en")).lower()[:2])
+        lang_cfg = lang_cfg or config.LANGUAGE_VOICES["en"]
+        voice_opts = {
+            "voice": data.get("voice") or lang_cfg["voice"],
+            "lang": lang_cfg["lang"],
+        }
+        try:
+            if data.get("speed"):
+                voice_opts["speed"] = float(data["speed"])
+        except (TypeError, ValueError):
+            pass
+
         if data.get("return") == "wav":
-            samples, rate = presenter.render_wav(text)
+            samples, rate = presenter.render_wav(text, **voice_opts)
             body = to_wav_bytes(samples, rate)
             self.send_response(200)
             self._cors()
@@ -88,7 +105,9 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
         else:
             # Speak in the background so the brain isn't blocked mid-conversation.
-            threading.Thread(target=presenter.speak, args=(text,), daemon=True).start()
+            threading.Thread(
+                target=presenter.speak, args=(text,), kwargs=voice_opts, daemon=True
+            ).start()
             self._json(200, {"status": "speaking"})
 
     def log_message(self, fmt, *args):

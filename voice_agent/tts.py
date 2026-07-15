@@ -14,8 +14,17 @@ class TextToSpeech:
             )
         self.kokoro = Kokoro(str(config.KOKORO_MODEL_PATH), str(config.KOKORO_VOICES_PATH))
 
-    def synthesize(self, text: str) -> tuple[np.ndarray, int]:
+    def synthesize(
+        self,
+        text: str,
+        voice: str | None = None,
+        speed: float | None = None,
+        lang: str | None = None,
+    ) -> tuple[np.ndarray, int]:
         samples, sample_rate = self.kokoro.create(
-            text, voice=config.TTS_VOICE, speed=config.TTS_SPEED, lang="en-us"
+            text,
+            voice=voice or config.TTS_VOICE,
+            speed=speed or config.TTS_SPEED,
+            lang=lang or "en-us",
         )
         return samples, sample_rate

@@ -66,31 +66,34 @@ class Presenter:
         self.tts = tts or TextToSpeech()
         self._lock = threading.Lock()
 
-    def _render(self, text: str) -> list[tuple[np.ndarray, int]]:
+    def _render(self, text: str, **voice_opts) -> list[tuple[np.ndarray, int]]:
         clips = []
         for sentence, paragraph_end in split_sentences(clean_for_speech(text)):
-            samples, rate = self.tts.synthesize(sentence)
+            samples, rate = self.tts.synthesize(sentence, **voice_opts)
             pause = config.PARAGRAPH_PAUSE_SEC if paragraph_end else config.SENTENCE_PAUSE_SEC
             silence = np.zeros(int(rate * pause), dtype=samples.dtype)
             clips.append((np.concatenate([samples, silence]), rate))
         return clips
 
-    def render_wav(self, text: str) -> tuple[np.ndarray, int]:
-        """Synthesize the whole passage and return (samples, sample_rate)."""
-        clips = self._render(text)
+    def render_wav(self, text: str, **voice_opts) -> tuple[np.ndarray, int]:
+        """Synthesize the whole passage and return (samples, sample_rate).
+
+        voice_opts: optional voice=, speed=, lang= overrides (see TextToSpeech).
+        """
+        clips = self._render(text, **voice_opts)
         if not clips:
             return np.zeros(0, dtype=np.float32), 24000
         rate = clips[0][1]
         return np.concatenate([c[0] for c in clips]), rate
 
-    def speak(self, text: str):
+    def speak(self, text: str, **voice_opts):
         """Speak text aloud. Synthesis of sentence N+1 overlaps playback of N."""
         with self._lock:  # one utterance at a time — voices don't talk over themselves
             clip_queue: queue.Queue = queue.Queue(maxsize=2)
 
             def synth_worker():
                 try:
-                    for clip in self._render(text):
+                    for clip in self._render(text, **voice_opts):
                         clip_queue.put(clip)
                 finally:
                     clip_queue.put(_DONE)

@@ -15,6 +15,15 @@ KOKORO_VOICES_PATH = MODELS_DIR / "voices-v1.0.bin"
 TTS_VOICE = "af_heart"
 TTS_SPEED = 0.95  # slightly slower than neutral — sounds composed, not rushed
 
+# Voices for other languages a caller can request ({"language": "es"} on
+# /speak). Keys are the short codes CarePT uses; lang is the espeak code
+# Kokoro's phonemizer expects.
+LANGUAGE_VOICES = {
+    "en": {"voice": TTS_VOICE, "lang": "en-us"},
+    "es": {"voice": "ef_dora", "lang": "es"},
+    "fr": {"voice": "ff_siwis", "lang": "fr-fr"},
+}
+
 # Silence inserted between sentences (seconds). Real speakers breathe;
 # a small pause makes the delivery feel human instead of machine-gun TTS.
 SENTENCE_PAUSE_SEC = 0.35
