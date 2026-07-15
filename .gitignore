@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Model files (large — downloaded via download_models.py)
+models/
+*.onnx
+*.bin
+
+# Audio scratch
+*.wav
+
+# OS
+.DS_Store

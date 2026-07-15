@@ -1,0 +1,4 @@
+kokoro-onnx>=0.4.9
+sounddevice>=0.5.1
+numpy
+requests
